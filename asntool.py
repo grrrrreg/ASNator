@@ -5,6 +5,17 @@ import json
 from flask import Flask, request, Response, make_response
 from time import sleep
 
+################
+# DISCLAIMER: this code is for a proto - Flask is not Async, which means it can only serve one concurrent user at a time
+# ideally, it should:
+# - not use WerkZeug but Tornado
+# - be loadbalanced behind NGNIX or similar
+# - get the Socket piece of code to be async, using some flavor of GEvent or Twister like native asyng
+################
+# TODOS:
+# - add a timeout in the socket code since it is blocking, you don't want it to hang for like 2s and not be able to serve other request
+################
+
 asnToolApp = Flask(__name__)
 
 # GLOBALS
@@ -24,7 +35,9 @@ def netcat(hostname, port, content):
         if not data:
 			break
         response += data
-        sleep(5)
+        # the sleep() below was meant for Stefan to explain to me that Flask was NOT ASYNC
+        # therefore Proto - one call to the endpoint stalls any other concurrent call until it is answered 
+        #sleep(5)
     return response
     s.close()
 
