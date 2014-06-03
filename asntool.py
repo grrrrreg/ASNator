@@ -8,12 +8,17 @@ from time import sleep
 ################
 # DISCLAIMER: this code is for a proto - Flask is not Async, which means it can only serve one concurrent user at a time
 # ideally, it should:
-# - not use WerkZeug but Tornado
+# - not use WerkZeug but Tornado or some WGSI capable
 # - be loadbalanced behind NGNIX or similar
 # - get the Socket piece of code to be async, using some flavor of GEvent or Twister like native asyng
+# - current config runs on localhost:8080, change that in the main loop if you want
 ################
 # TODOS:
 # - add a timeout in the socket code since it is blocking, you don't want it to hang for like 2s and not be able to serve other request
+################
+# CREDITS:
+# uses Team Cymru's awesome WHOIS, look at http://www.team-cymru.org/Services/ip-to-asn.html for more details
+# WARNING: please let CYMRU know if this is going to be used in prod and/or intensively so they can scale up
 ################
 
 asnToolApp = Flask(__name__)
@@ -35,7 +40,7 @@ def netcat(hostname, port, content):
         if not data:
 			break
         response += data
-        # the sleep() below was meant for Stefan to explain to me that Flask was NOT ASYNC
+        # the sleep() below was meant to demonstrate Flask was NOT ASYNC and not meant to
         # therefore Proto - one call to the endpoint stalls any other concurrent call until it is answered 
         #sleep(5)
     return response
@@ -81,15 +86,11 @@ def queryAsn(asnFlatList):
 		i += 1
 	return Response(json.dumps(formattedResult), content_type = 'application/json', headers = {'Access-Control-Allow-Origin':'http://127.0.0.1'})
 
-#def main():
-#	test = queryAsn([12322,5511,6128,8220,33655,33491,33662,23253,7015])
-#	print json.dumps(test, sort_keys = False, indent = 4)
-
 ############
 # MAIN LOOP
 ############
 def main():
-	asnToolApp.run(host='127.0.0.1', debug=True)
+	asnToolApp.run(host='0.0.0.0', port=8080, debug=True)
 
 if __name__ == '__main__':
 	main()
