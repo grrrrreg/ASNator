@@ -217,9 +217,10 @@ def queryAsn(asFlatList):
 		result = getAsDetails(asList)
 		
 		if outFormat:
-			csvResult = '"AS_Description","AS_Autnum","AS_Country"\n'
-			for asObject in result:
-				csvResult += ','.join(['"' + str(asObject[key]) + '"' for key in asObject]) + "\n"
+			csvResult = '"is_AS_Valid","AS_Description","AS_Autnum","AS_Country"\n'
+			for key in result:
+				for asObject in result[key]:
+					csvResult += '"' + key.upper() + '",' + ','.join(['"' + str(asObject[x]) + '"' for x in asObject]) + "\n"
 			return Response(csvResult, mimetype='text/csv')
 
 		else:
