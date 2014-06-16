@@ -14,7 +14,8 @@ ASNator can either be used:
 	- ```netcat(host,port,read_size)```
 	- ```getAsnDetails(asnList=list())``` : uses netcat above to query Cymru for ASN details
 	- ```isValidAutNum(aut_Num)```: tells you if an (int) ASN is valid or not according to 16 adn 32 bit ASNs allocations - handy for filter() functional programming 
-##  API mode usage example:
+
+# API mode usage example:
 ```curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/ | jq .
 {
   "error": [
