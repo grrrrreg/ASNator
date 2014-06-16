@@ -47,7 +47,18 @@ Returns:
   ]
 }
 ```
- 
+# Error handling
+The HTTP Rest API will generate an HTTP Error and return a body detailing the error in case all queried ASNs are invalid.
+```
+curl http://127.0.0.1:8080/asn/131071,65539/
+```
+Will return an HTTP_421 error:
+```json
+{
+"error_code": "421",
+"error_descr": "GET_AS_DETAILS().INVALID_ASN_LIST_ERROR: 131071, 65539"
+}
+``` 
 
 
 # TO-DO
