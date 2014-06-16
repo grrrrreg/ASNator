@@ -18,6 +18,9 @@ ASNator can either be used:
 	- ```isValidAutNum(aut_Num)```: tells you if an (int) ASN is valid or not according to 16 adn 32 bit ASNs allocations - handy for filter() functional programming 
 
 # API mode usage example:
+## json output mode
+By default, the output *content-type* is a valid *application/json*, the command below gives an input, showing a request that has been issued with both valid and invalid aut-nums  
+
 ```curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/ | jq .```
 
 Returns:
@@ -49,6 +52,20 @@ Returns:
   ]
 }
 ```
+## CSV format
+csv format (Excel readable) is provided through the ?format=csv queryArg, as displayed in the example below.
+```
+curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/?format=csv
+```
+Will give you the following CSV file:
+
+|is_AS_Valid	|AS_Description	|AS_Autnum	|AS_Country            |
+|---------------|---------------|---------------|----------------------|
+|SUCCESS	|12822  	|DE	        |LYNET Kommunikation AG|
+|SUCCESS	|5511	        |FR	        |Orange S.A.           |
+|ERROR	        |65637	        |n/a	        |invalid aut-num       |
+|ERROR	        |5000000000	|n/a	        |invalid aut-num       |
+
 # Error handling
 ## Querying for invalid ASNs
 The HTTP Rest API will generate an HTTP Error and return a body detailing the error in case all queried ASNs are invalid.
