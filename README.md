@@ -48,6 +48,7 @@ Returns:
 }
 ```
 # Error handling
+## Querying for invalid ASNs
 The HTTP Rest API will generate an HTTP Error and return a body detailing the error in case all queried ASNs are invalid.
 ```
 curl http://127.0.0.1:8080/asn/131071,65539/
@@ -59,7 +60,18 @@ Will return an HTTP_421 error:
 "error_descr": "GET_AS_DETAILS().INVALID_ASN_LIST_ERROR: 131071, 65539"
 }
 ``` 
+## Malformed whois.cymru.com
+A runTimeError exception is also in place to detect malformed whois responses:
+```python
+	except RuntimeError, e:
+		errorResponse =  make_response(json.dumps({'error_code':'420', 'error_descr':str(e)}), 420)
+		errorResponse.headers['content-type'] = 'application/json'
+		return errorResponse
+```
 
+## Socket errors
+errors due to the ```netcat()``` function misbehaving are also taken into account and forwarded as ```socket.error``` and ```socket.gaierror``` with an 
+indication on whether they are *CREATE*, *CONNECT*, *ADDRESS*, *SEND* and *RECEIVE* errors. The HTTP API catches them and sends an HTTP_41x error with an error message identifying the socket action causing triggering the exception.
 
 # TO-DO
 - memoize w/ decorators to avoid having to hit whois.cymru.com unnecessarily
