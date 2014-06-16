@@ -16,7 +16,10 @@ ASNator can either be used:
 	- ```isValidAutNum(aut_Num)```: tells you if an (int) ASN is valid or not according to 16 adn 32 bit ASNs allocations - handy for filter() functional programming 
 
 # API mode usage example:
-```curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/ | jq .
+```curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/ | jq .```
+
+Returns:
+```json
 {
   "error": [
     {
@@ -42,7 +45,8 @@ ASNator can either be used:
       "AS_Autnum": 5511
     }
   ]
-}```
+}
+```
  
 
 
