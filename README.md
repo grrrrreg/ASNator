@@ -22,6 +22,7 @@ ASNator can either be used:
 By default, the output *content-type* is a valid *application/json*, the command below gives an input, showing a request that has been issued with both valid and invalid aut-nums  
 
 ```curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/ | jq .```
+*(using the awesome <a href='http://stedolan.github.io/jq/'>jq</a> to prettyprint the output of curl, has no relevance with ASNTool itself, but is a crazy good tool for REST devs)*.
 
 Returns:
 ```json
@@ -52,7 +53,7 @@ Returns:
   ]
 }
 ```
-## CSV format
+## .csv format
 csv format (Excel readable) is provided through the ?format=csv queryArg, as displayed in the example below.
 ```
 curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/?format=csv
@@ -65,6 +66,50 @@ Will give you the following CSV file:
 |SUCCESS	|5511	        |FR	        |Orange S.A.           |
 |ERROR	        |65637	        |n/a	        |invalid aut-num       |
 |ERROR	        |5000000000	|n/a	        |invalid aut-num       |
+
+# Using as a module
+All functions are available when importing asntool as a module, examples below.
+
+```python 
+>>> import asntool
+>>> asList = asntool.getAsDetails([65637,5000000000,12822,5511])
+>>> import json
+>>> print json.dumps(asList, sort_keys=True, indent=4)
+{
+    "error": [
+        {
+            "ASN_Autnum": "65637", 
+            "AS_Country_Code": "n/a", 
+            "AS_Description": "invalid aut-num"
+        }, 
+        {
+            "ASN_Autnum": "5000000000", 
+            "AS_Country_Code": "n/a", 
+            "AS_Description": "invalid aut-num"
+        }
+    ], 
+    "success": [
+        {
+            "AS_Autnum": 12822, 
+            "AS_Country_Code": "DE", 
+            "AS_Description": "LYNET Kommunikation AG"
+        }, 
+        {
+            "AS_Autnum": 5511, 
+            "AS_Country_Code": "FR", 
+            "AS_Description": "Orange S.A."
+        }
+    ]
+}```
+
+Or if you want to check if an aut-num is valid:
+```python
+>>> import asntool
+>>> if not asntool.isValidAutNum(65636):
+...     print "AS65636 IS INVALID - side note: it is a private AS"
+... 
+AS65636 IS INVALID - side note: it is a private AS
+```
 
 # Error handling
 ## Querying for invalid ASNs
