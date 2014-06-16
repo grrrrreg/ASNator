@@ -6,6 +6,8 @@ Please read the disclaimer below as it it a prototype that has a lot of design a
 
 # REQUIREMENTS
 Python module requirements are listed in a pip freeze output under requirements.txt attached to this repo
+To isntall the dependencies:
+```pip install -r requirements.txt```
 
 # USE
 ASNator can either be used:
