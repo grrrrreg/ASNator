@@ -1,23 +1,17 @@
 #!bin/python
 
-import socket
-import json
+import socket, json, sys
 from flask import Flask, request, Response, make_response
 
 ################
 # DISCLAIMER: this code is for a proto - Flask is not Async, which means it can only serve one concurrent user at a time
-# ideally, it should:
-# - not use WerkZeug but Tornado or some WGSI capable
-# - be loadbalanced behind NGNIX or similar
-# - get the Socket piece of code to be async, using some flavor of GEvent or Twister like native asyng
-# - current config runs on localhost:8080, change that in the main loop if you want
-################
-# TODOS:
-# - add a timeout in the socket code since it is blocking, you don't want it to hang for like 2s and not be able to serve other request
+# this uses threaded=True mode of Flask, but still cannot run in prod
 ################
 # CREDITS:
 # uses Team Cymru's awesome WHOIS, look at http://www.team-cymru.org/Services/ip-to-asn.html for more details
+################
 # WARNING: please let CYMRU know if this is going to be used in prod and/or intensively so they can scale up
+# please make sure that you implement some level of caching in case you are going to massively query whois.cymru.com
 ################
 
 asnToolApp = Flask(__name__)
@@ -25,6 +19,28 @@ asnToolApp = Flask(__name__)
 # GLOBALS
 CYMRU_HOST = 'whois.cymru.com'
 CYMRU_PORT = 43
+
+def isValidAutNum(as_number):
+	'''
+	Filter function, determines whether an ASN is legitimate or not.
+	Acceptable aut-num should be within the ranges described here: 
+	http://www.iana.org/assignments/as-numbers/as-numbers.xhtml
+	Return values:
+	--------------
+	True if is a LEGITIMATE aut-num
+	False if is an INVALID aut-num
+	'''
+
+	if isinstance(as_number, (int, long)):
+		if (0 < as_number < 65536):
+			return True
+		else:
+			if (131071 < as_number < 5000000000):
+				return True
+			else:
+				return False
+	else:
+		return False
 
 # a whois server can be talked to by sending commands to a TCP_43 socket
 # hence using a poorman's Netcat
@@ -59,20 +75,20 @@ def netcat(hostname, port, command, chunk_size = 4096):
 				        response += data
 			        except socket.error,e:
 						print "SOCKET_READ_ERROR: cannot receive data from %s TCP port %d: %s" % (hostname,port,e)
-				sys.exit(1)
+						raise("NETCAT().SOCKET_READ_ERROR")
 			    return response
-		    except socket.error,e:
+		    except socket.error, e:
 				print "SOCKET_SEND_ERROR: cannot send command %s to socket: %s" % (command,e)
-				sys.exit(1)
-		except socket.gaierror,e:
+				raise("NETCAT().SOCKET_SEND_ERROR")
+		except socket.gaierror, e:
 			print "SOCKET_ADDRESS_ERROR: Address-related error connecting to server: %s" % e
-			sys.exit(1)
-		except socket.error,e:
+			raise("NETCAT().SOCKET_ADDRESS_ERROR")
+		except socket.error, e:
 			print "SOCKET_CONNECTION_ERROR: Connection error, socket could not connect to %s TCP Port %d %s" % (hostname, port, e)
-			sys.exit(1)	
+			raise("NETCAT().SOCKET_CONNECTION_ERROR")
 	except socket.error, e:
-		print "SOCKET_CREATE_ERROR: Erroe during socket creation phase | EXCEPTION: %s" % e
-		sys.exit(1)
+		print "SOCKET_CREATE_ERROR: Error during socket creation phase | EXCEPTION: %s" % e
+		raise("NETCAT().SOCKET_CONNECTION_ERROR")
 	finally:
 		s.close()
 
@@ -87,46 +103,101 @@ def getAsDetails(asList):
 						WARNING: only takes a LIST(array)
 	Return value:
 	-------------
-	response is an array of objects as described below:
-		[{'AS_Autnum':<as_number>, 'AS_Description':<ISP_Name>, 'AS_Country_Code':<ISO_Country_Code>}, {...}, ...]
+	response an object containing SUCCESS and ERROR arrays of response:
+		{
+			'success':[
+				{'AS_Autnum':<as_number>, 
+				'AS_Description':<ISP_Name>, 
+				'AS_Country_Code':<ISO_Country_Code>}, 
+				{...}, 
+				...
+			],
+			'error'  :[
+				{'AS_Autnum':null, 
+				'AS_Description':'invalid aut-num', 
+				'AS_Country_Code':'n/a'}, 
+				{...}, 
+				...
+			]
+		}
 	'''
+
+	formattedResult = {}
+	formattedResult['success'] = []
+	formattedResult['error'] = []
+
+	# test the asList values to see if these are legit AS Numbers
+	# make two lists - the idea is to return both Success and Error
+	# 		- one with the valid ASNs, using filter, and the isLegitAsnFilter() filter function
+	#		- the other with the negation of the afore mentioned list
+	validAsnList = filter(isValidAutNum, asList)
+	invalidAsnList = [{'ASN_Autnum':str(x),'AS_Description':'invalid aut-num', 'AS_Country_Code':'n/a' } for x in asList if x not in validAsnList]
+	
+	#if some ASNs in the list in argument are invalid, add them to the 'error' section of the response
+	if len(invalidAsnList):
+		formattedResult['error'].extend(invalidAsnList)
+
+	# in case there is not valid ASN submitted in the query, raise an exception
+	if not len(validAsnList):
+		print "ERROR: entirely invalid ASN list:" + ', '.join([invalidAsnList[x]['ASN_Autnum'] for x in range(len(invalidAsnList))])
+		raise ValueError("GET_AS_DETAILS().INVALID_ASN_LIST_ERROR: " + ', '.join([invalidAsnList[x]['ASN_Autnum'] for x in range(len(invalidAsnList))]))
+
 	# create the CYMRU WHOIS bacth query
+	# only using the valid ASNs to query Cymru
 	cymruInput = 'begin\r\n'
-	for autNum in asList:
-		cymruInput += 'as' + str(autNum) + '\r\n'
+	for entry in validAsnList:
+		cymruInput += 'as' + str(entry) + '\r\n'
 	cymruInput += 'end\r\n'
 	
 	# issuing the Netcat to Cymru's Whois server port 43
-	netcatResult = netcat(CYMRU_HOST, CYMRU_PORT, cymruInput, 4096)
-	
-	# convert response string into response array
-	cymruResponse = []
-	cymruResponse = netcatResult.split('\n')
-	
-	# cleaning up the returned object
-	cymruResponse.pop(0)
-	cymruResponse.pop(len(cymruResponse)-1)
-
-	formattedResult = []
-	i = 0
-	for line in cymruResponse:
-		#watch out, there might be "," before the one from the country flag...
-		tmp = line.split(',')
+	try:
+		netcatResult = netcat(CYMRU_HOST, CYMRU_PORT, cymruInput, 4096)
 		
-		#identify the position of the last comma
-		if len(tmp) > 1:
-			countryCode = tmp[-1]
-			orgName = ''.join(tmp[0:len(tmp)-1]).split(' ',1)[1].replace('- ','')
-			
+		# convert response string into response array
+		cymruResponse = []
+		cymruResponse = netcatResult.split('\n')
+
+		# cleaning up the returned object
+		# removes header
+		cymruResponse.pop(0)
+		# removes the trailing "\r\n"
+		cymruResponse.pop(len(cymruResponse)-1)
+
+		i = 0
+		if len(cymruResponse) > 0:
+			for line in cymruResponse:
+				#watch out, there might be "," before the one from the country flag...
+				tmp = line.split(',')
+				
+				#identify the position of the last comma
+				if len(tmp) > 1:
+					countryCode = tmp[-1]
+					orgName = ''.join(tmp[0:len(tmp)-1]).split(' ',1)[1].replace('- ','')
+					
+				else:
+					#this code seems completely wrong - if not len(tmp)>1 then there aren't two elements in tmp...
+					#this needs to be fixed asap
+					countryCode = tmp[1]
+					orgName = tmp[0]
+
+				formattedResult['success'].append({'AS_Autnum':validAsnList[i], 'AS_Description':orgName, 'AS_Country_Code':countryCode})
+				i += 1
+			return formattedResult
+
 		else:
-			countryCode = tmp[1]
-			orgName = tmp[0]
+			print("ERROR: whois to whois.cymru.com returned unexpected response length null")
+			raise RuntimeError("GET_AS_DETAILS().MALFORMED_WHOIS_RESPONSE: Null Result")
+	
+	except socket.error, e:
+		print("ERROR: SOCKET ERROR -> NETCAT ERROR -> GET_AS_DETAILS() ERROR")
+		# forward the last exception
+		raise
 
-		formattedResult.append({'AS_Autnum':asList[i], 'AS_Description':orgName, 'AS_Country_Code':countryCode})
-		i += 1
-
-	return formattedResult
-
+	except socket.gaierror, e:
+		print("ERROR: SOCKET ERROR -> NETCAT ERROR -> GET_AS_DETAILS() ERROR")
+		# forward the last exception
+		raise
+	
 @asnToolApp.route('/asn/<path:asFlatList>/')
 def queryAsn(asFlatList):
 	""" Flask wrapped function to figure out name and country details of an asNumber
@@ -142,16 +213,37 @@ def queryAsn(asFlatList):
 	# taking ASN list from the route <path:asnFlatList> (coma separated)
 	# and building the begin/end wrapped input to Cymru's whois
 	asList = [int(x) for x in asFlatList.split(',')]
-	result = getAsDetails(asList)
-	
-	if outFormat:
-		csvResult = '"AS_Description","AS_Autnum","AS_Country"\n'
-		for asObject in result:
-			csvResult += ','.join(['"' + str(asObject[key]) + '"' for key in asObject]) + "\n"
-		return Response(csvResult, mimetype='text/csv')
+	try:
+		result = getAsDetails(asList)
+		
+		if outFormat:
+			csvResult = '"AS_Description","AS_Autnum","AS_Country"\n'
+			for asObject in result:
+				csvResult += ','.join(['"' + str(asObject[key]) + '"' for key in asObject]) + "\n"
+			return Response(csvResult, mimetype='text/csv')
 
-	else:
-		return Response(json.dumps(result), content_type = 'application/json', headers = {'Access-Control-Allow-Origin':'http://127.0.0.1'})
+		else:
+			return Response(json.dumps(result), content_type = 'application/json', headers = {'Access-Control-Allow-Origin':'http://127.0.0.1'})
+
+	except socket.error, e:
+		errorResponse =  make_response(json.dumps({'error_code':'410', 'error_descr':str(e)}), 410)
+		errorResponse.headers['content-type'] = 'application/json'
+		return errorResponse
+
+	except socket.gaierror, e:
+		errorResponse =  make_response(json.dumps({'error_code':'411', 'error_descr':str(e)}), 411)
+		errorResponse.headers['content-type'] = 'application/json'
+		return errorResponse
+
+	except RuntimeError, e:
+		errorResponse =  make_response(json.dumps({'error_code':'420', 'error_descr':str(e)}), 420)
+		errorResponse.headers['content-type'] = 'application/json'
+		return errorResponse
+
+	except ValueError, e:
+		errorResponse =  make_response(json.dumps({'error_code':'421', 'error_descr':str(e)}), 421)
+		errorResponse.headers['content-type'] = 'application/json'
+		return errorResponse
 
 ############
 # MAIN LOOP
