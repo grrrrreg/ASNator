@@ -58,6 +58,10 @@ def netcat(hostname, port, command, chunk_size = 4096):
 	Return value:
 	-------------
 	string containing the reponse from hostname to command
+
+	Exceptions:
+	-----------
+	re-raises socket errors so they can be used when calling netcat()
 	'''
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -107,20 +111,26 @@ def getAsDetails(asList, specificAction=False):
 	response an object containing SUCCESS and ERROR arrays of response:
 		{
 			'success':[
-				{'AS_Autnum':<as_number>, 
+				{'AS_Autnum':<aut-num>, 
 				'AS_Description':<ISP_Name>, 
 				'AS_Country_Code':<ISO_Country_Code>}, 
 				{...}, 
 				...
 			],
 			'error'  :[
-				{'AS_Autnum':null, 
+				{'AS_Autnum':<invalid-aut-num>, 
 				'AS_Description':'invalid aut-num', 
-				'AS_Country_Code':'n/a'}, 
+				'AS_Country_Code':null}, 
 				{...}, 
 				...
 			]
 		}
+
+	Exceptions:
+	-----------
+	returns properly formed HTTP responses:
+	- 4xx for invalid user inputs
+	- 5xx for server errors, mostly socket related
 	'''
 
 	formattedResult , formattedResult['success'], formattedResult['error'] =  {}, [], []
@@ -130,8 +140,8 @@ def getAsDetails(asList, specificAction=False):
 	# 		- one with the valid ASNs, using filter, and the isLegitAsnFilter() filter function
 	#		- the other with the negation of the afore mentioned list
 	validAsnList = filter(isValidAutNum, asList)
-	invalidAsnList = [{'ASN_Autnum':str(x),'AS_Description':'invalid aut-num', 'AS_Country_Code':'n/a' } for x in asList if x not in validAsnList]
-	
+	invalidAsnList = [str(x) for x in asList if x not in validAsnList]
+		
 	# in case a user defines a specific action such as "validate all ASNs passed in URL"
 	if specificAction:
 		if specificAction == 'validate':
@@ -146,12 +156,12 @@ def getAsDetails(asList, specificAction=False):
 
 	#if some ASNs in the list in argument are invalid, add them to the 'error' section of the response
 	if len(invalidAsnList):
-		formattedResult['error'].extend(invalidAsnList)
+		formattedResult['error'] = [{'AS_Autnum':x, 'AS_Description':'invalid aut-num', 'AS_Country_Code':'invalid aut-num'} for x in invalidAsnList]
 
 	# in case there is not valid ASN submitted in the query, raise an exception
 	if not len(validAsnList):
-		print "ERROR: entirely invalid ASN list:" + ', '.join([invalidAsnList[x]['ASN_Autnum'] for x in range(len(invalidAsnList))])
-		raise ValueError("GET_AS_DETAILS().INVALID_ASN_LIST_ERROR: " + ', '.join([invalidAsnList[x]['ASN_Autnum'] for x in range(len(invalidAsnList))]))
+		print "ERROR: entirely invalid ASN list:" + ', '.join([invalidAsnList[x] for x in range(len(invalidAsnList))])
+		raise ValueError("GET_AS_DETAILS().INVALID_ASN_LIST_ERROR: " + ', '.join([invalidAsnList[x] for x in range(len(invalidAsnList))]))
 
 	# create the CYMRU WHOIS bacth query
 	# only using the valid ASNs to query Cymru
@@ -224,7 +234,15 @@ def queryAsn(asFlatList):
 
 	# taking ASN list from the route <path:asnFlatList> (coma separated)
 	# and building the begin/end wrapped input to Cymru's whois
-	asList = [x for x in asFlatList.split(',')]
+	# if a record can be transtyped into an integer, do it, else keep it string'ed
+	# = preflight for the getAsDetails() function
+	asList =[]
+	for elt in asFlatList.split(','):
+		try:
+			destValue = int(elt)
+		except:
+			destValue = str(elt)
+		asList.append(destValue)
 
 	#checks if ?action=validate is used as a query arg
 	if request.args.get('action') == 'validate':
@@ -242,25 +260,26 @@ def queryAsn(asFlatList):
 			return Response(csvResult, mimetype='text/csv')
 
 		else:
+			print result
 			return Response(json.dumps(result), content_type = 'application/json', headers = {'Access-Control-Allow-Origin':'http://127.0.0.1:8000'})
 
 	except socket.error, e:
-		errorResponse =  make_response(json.dumps({'error_code':'410', 'error_descr':str(e)}), 410)
+		errorResponse =  make_response(json.dumps({'error_code':'510', 'error_descr':str(e)}), 510)
 		errorResponse.headers['content-type'] = 'application/json'
 		return errorResponse
 
 	except socket.gaierror, e:
-		errorResponse =  make_response(json.dumps({'error_code':'411', 'error_descr':str(e)}), 411)
+		errorResponse =  make_response(json.dumps({'error_code':'511', 'error_descr':str(e)}), 511)
 		errorResponse.headers['content-type'] = 'application/json'
 		return errorResponse
 
 	except RuntimeError, e:
-		errorResponse =  make_response(json.dumps({'error_code':'420', 'error_descr':str(e)}), 420)
+		errorResponse =  make_response(json.dumps({'error_code':'512', 'error_descr':str(e)}), 512)
 		errorResponse.headers['content-type'] = 'application/json'
 		return errorResponse
 
 	except ValueError, e:
-		errorResponse =  make_response(json.dumps({'error_code':'421', 'error_descr':str(e)}), 421)
+		errorResponse =  make_response(json.dumps({'error_code':'410', 'error_descr':str(e)}), 410)
 		errorResponse.headers['content-type'] = 'application/json'
 		return errorResponse
 
