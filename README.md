@@ -111,6 +111,20 @@ Or if you want to check if an aut-num is valid:
 ... 
 AS65636 IS INVALID - side note: it is a private AS
 ```
+You can also use the ```?action=check``` queryArg if you want to figure out which ASNs within a list are valid:
+```
+curl http://127.0.0.1:8080/asn/65637,5000000000,12322,3215,tata/?action=validate
+```
+Will give you that answer:
+```json
+{
+"3215": true,
+"12322": true,
+"65637": false,
+"tata": false,
+"5000000000": false
+}
+```
 
 # Error handling
 ## Querying for invalid ASNs
