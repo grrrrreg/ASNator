@@ -62,6 +62,7 @@ def netcat(hostname, port, command, chunk_size = 4096):
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		try:
+			# still not sure I understand why socket.connect uses a tuple
 		    s.connect((hostname, port))
 		    try:
 			    s.sendall(command)
@@ -94,7 +95,7 @@ def netcat(hostname, port, command, chunk_size = 4096):
 
 # uses the func above and wraps it into another one, simplified
 # that uses only an array as argument
-def getAsDetails(asList):
+def getAsDetails(asList, specificAction=False):
 	'''
 	Uses the netcat:43 socket connection to whois.cymru.com to fetch Description and ASN for a list of aut-nums
 	Arguments:
@@ -122,9 +123,7 @@ def getAsDetails(asList):
 		}
 	'''
 
-	formattedResult = {}
-	formattedResult['success'] = []
-	formattedResult['error'] = []
+	formattedResult , formattedResult['success'], formattedResult['error'] =  {}, [], []
 
 	# test the asList values to see if these are legit AS Numbers
 	# make two lists - the idea is to return both Success and Error
@@ -133,6 +132,18 @@ def getAsDetails(asList):
 	validAsnList = filter(isValidAutNum, asList)
 	invalidAsnList = [{'ASN_Autnum':str(x),'AS_Description':'invalid aut-num', 'AS_Country_Code':'n/a' } for x in asList if x not in validAsnList]
 	
+	# in case a user defines a specific action such as "validate all ASNs passed in URL"
+	if specificAction:
+		if specificAction == 'validate':
+			validityResult = {}
+			for x in asList:
+				if x in validAsnList:
+					validityResult[str(x)] = True
+				else:
+					validityResult[str(x)] = False
+
+			return validityResult
+
 	#if some ASNs in the list in argument are invalid, add them to the 'error' section of the response
 	if len(invalidAsnList):
 		formattedResult['error'].extend(invalidAsnList)
@@ -154,7 +165,6 @@ def getAsDetails(asList):
 		netcatResult = netcat(CYMRU_HOST, CYMRU_PORT, cymruInput, 4096)
 		
 		# convert response string into response array
-		cymruResponse = []
 		cymruResponse = netcatResult.split('\n')
 
 		# cleaning up the returned object
@@ -200,9 +210,11 @@ def getAsDetails(asList):
 	
 @asnToolApp.route('/asn/<path:asFlatList>/')
 def queryAsn(asFlatList):
-	""" Flask wrapped function to figure out name and country details of an asNumber
+	""" 
+	Flask wrapped function to figure out name and country details of an asNumber
 	asFlatList:	comma separated list of values for each ASN to be queries against
-	USES TEAM CYMRU's WHOIS SERVER: http://www.team-cymru.org/Services/ip-to-asn.html"""
+	USES TEAM CYMRU's WHOIS SERVER: http://www.team-cymru.org/Services/ip-to-asn.html
+	"""
 
 	#checks if ?format=csv is used as a query arg
 	if request.args.get('format'):
@@ -212,7 +224,13 @@ def queryAsn(asFlatList):
 
 	# taking ASN list from the route <path:asnFlatList> (coma separated)
 	# and building the begin/end wrapped input to Cymru's whois
-	asList = [int(x) for x in asFlatList.split(',')]
+	asList = [x for x in asFlatList.split(',')]
+
+	#checks if ?action=validate is used as a query arg
+	if request.args.get('action') == 'validate':
+		result = getAsDetails(asList, specificAction='validate')
+		return Response(json.dumps(result), content_type = 'application/json', headers = {'Access-Control-Allow-Origin':'http://127.0.0.1:8000'})
+
 	try:
 		result = getAsDetails(asList)
 		
@@ -224,7 +242,7 @@ def queryAsn(asFlatList):
 			return Response(csvResult, mimetype='text/csv')
 
 		else:
-			return Response(json.dumps(result), content_type = 'application/json', headers = {'Access-Control-Allow-Origin':'http://127.0.0.1'})
+			return Response(json.dumps(result), content_type = 'application/json', headers = {'Access-Control-Allow-Origin':'http://127.0.0.1:8000'})
 
 	except socket.error, e:
 		errorResponse =  make_response(json.dumps({'error_code':'410', 'error_descr':str(e)}), 410)
