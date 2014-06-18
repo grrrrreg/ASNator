@@ -7,6 +7,7 @@
 
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
@@ -15,17 +16,18 @@
   <body>
     <div class="wrapper">
       <header>
-        <h1>ASNator</h1>
-        <p>Small Python+Flask API using team-cymru.com&#39;s bgp based whois server to return AS name and AS Country Code for a given ASN</p>
-
-        <p class="view"><a href="https://github.com/grrrrreg/ASNator">View the Project on GitHub <small>grrrrreg/ASNator</small></a></p>
-
+        <h1 class="header">ASNator</h1>
+        <p class="header">Small Python+Flask API using team-cymru.com&#39;s bgp based whois server to return AS name and AS Country Code for a given ASN</p>
 
         <ul>
-          <li><a href="https://github.com/grrrrreg/ASNator/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/grrrrreg/ASNator/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/grrrrreg/ASNator">View On <strong>GitHub</strong></a></li>
+          <li class="download"><a class="buttons" href="https://github.com/grrrrreg/ASNator/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/grrrrreg/ASNator/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/grrrrreg/ASNator">View On GitHub</a></li>
         </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/grrrrreg">grrrrreg</a></p>
+
+
       </header>
       <section>
         <h1>
@@ -38,25 +40,23 @@ Please read the disclaimer below as it it a prototype that has a lot of design a
 <a name="requirements" class="anchor" href="#requirements"><span class="octicon octicon-link"></span></a>Requirements</h2>
 
 <p>Python module requirements are listed in a pip freeze output under requirements.txt attached to this repo
-Artisanal install of the required modules is necessary:</p>
+To isntall the dependencies:</p>
 
 <pre><code>pip install -r requirements.txt
 </code></pre>
 
 <blockquote>
-<p>At some point when my life is already complete, I'll try and package it...</p>
+<p>at some point in a distant future I will try and package it...</p>
 </blockquote>
 
 <h2>
-<a name="how-to-use-it" class="anchor" href="#how-to-use-it"><span class="octicon octicon-link"></span></a>How to use it</h2>
+<a name="using-asnator" class="anchor" href="#using-asnator"><span class="octicon octicon-link"></span></a>Using ASNator</h2>
 
 <p>ASNator can either be used:</p>
 
 <ul>
-<li>
-<strong>API:</strong> as a standalone web API</li>
-<li>
-<strong>Python Module:</strong> as a module giving you access to useful functions: (via <code>import asntool</code>)
+<li>as a standalone web API</li>
+<li>as a module giving you access to useful functions: (via <code>import asntool</code>)
 
 <ul>
 <li><code>netcat(host,port,read_size)</code></li>
@@ -66,21 +66,40 @@ Artisanal install of the required modules is necessary:</p>
 <code>isValidAutNum(aut_Num)</code>: tells you if an (int) ASN is valid or not according to 16 adn 32 bit ASNs allocations - handy for filter() functional programming </li>
 </ul>
 </li>
-</ul><p>Details about the functions from the module available via the docstrings:</p>
-
-<pre><code>&gt;&gt;&gt; import asntool
-&gt;&gt;&gt; help(netcat)
-&gt;&gt;&gt; help(getAsnDetails)
-&gt;&gt;&gt; help(isValidAutNum)
-</code></pre>
-
-<h2>
+</ul><h2>
 <a name="api-mode-usage-example" class="anchor" href="#api-mode-usage-example"><span class="octicon octicon-link"></span></a>API mode usage example:</h2>
 
 <h3>
 <a name="json-output-mode" class="anchor" href="#json-output-mode"><span class="octicon octicon-link"></span></a>json output mode</h3>
 
 <p>By default, the output <em>content-type</em> is a valid <em>application/json</em>, the command below gives an input, showing a request that has been issued with both valid and invalid aut-nums  </p>
+
+<h4>
+<a name="restful-mode-using-asnquery-" class="anchor" href="#restful-mode-using-asnquery-"><span class="octicon octicon-link"></span></a>RESTful mode using /asn/?query=, ....</h4>
+
+<p><code>curl http://127.0.0.1:8080/asn/?query=41690,29169 | jq .</code></p>
+
+<p>Returns:</p>
+
+<div class="highlight highlight-json"><pre><span class="p">{</span>
+  <span class="nt">"error"</span><span class="p">:</span> <span class="p">[],</span>
+  <span class="nt">"success"</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">"AS_Description"</span><span class="p">:</span> <span class="s2">"Dailymotion S.A."</span><span class="p">,</span>
+      <span class="nt">"AS_Country_Code"</span><span class="p">:</span> <span class="s2">"FR"</span><span class="p">,</span>
+      <span class="nt">"AS_Autnum"</span><span class="p">:</span> <span class="mi">41690</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">"AS_Description"</span><span class="p">:</span> <span class="s2">"Gandi SAS"</span><span class="p">,</span>
+      <span class="nt">"AS_Country_Code"</span><span class="p">:</span> <span class="s2">"FR"</span><span class="p">,</span>
+      <span class="nt">"AS_Autnum"</span><span class="p">:</span> <span class="mi">29169</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+<h4>
+<a name="loosely-restful-aka-not-restful-for-realz-using-asn" class="anchor" href="#loosely-restful-aka-not-restful-for-realz-using-asn"><span class="octicon octicon-link"></span></a>loosely RESTful (aka, not RESTful, for realz) using /asn/,...</h4>
 
 <p><code>curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/ | jq .</code>
 <em>(using the awesome <a href="http://stedolan.github.io/jq/">jq</a> to prettyprint the output of curl, has no relevance with ASNTool itself, but is a crazy good tool for REST devs)</em>.</p>
@@ -115,8 +134,31 @@ Artisanal install of the required modules is necessary:</p>
 <span class="p">}</span>
 </pre></div>
 
-<h3>
-<a name="csv-format" class="anchor" href="#csv-format"><span class="octicon octicon-link"></span></a>.csv format</h3>
+<h4>
+<a name="validate-as-numbers" class="anchor" href="#validate-as-numbers"><span class="octicon octicon-link"></span></a>validate AS Numbers</h4>
+
+<p>The <code>?action=validate</code> will allow you to validate if an ASN is valid or not, and if it has been allocted or not.</p>
+
+<pre><code>curl http://127.0.0.1:8080/asn/65637,5000000000,12322,3215,tata/?action=validate
+</code></pre>
+
+<p>Will give you that answer:</p>
+
+<div class="highlight highlight-json"><pre><span class="p">{</span>
+    <span class="nt">"3215"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="nt">"12322"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="nt">"65637"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+    <span class="nt">"tata"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+    <span class="nt">"5000000000"</span><span class="p">:</span> <span class="kc">false</span>
+<span class="p">}</span>
+</pre></div>
+
+<blockquote>
+<p>**note: ** AS like AS1234567 are valid from a RIR standpoint (RIPE, ARIN...), but are not allocated, these will be marked as valid (i.e. value for a "success" key in a reponse json, and will be validated by the <code>?action=validate</code> option</p>
+</blockquote>
+
+<h4>
+<a name="csv-format" class="anchor" href="#csv-format"><span class="octicon octicon-link"></span></a>.csv format</h4>
 
 <p>csv format (Excel readable) is provided through the ?format=csv queryArg, as displayed in the example below.</p>
 
@@ -221,7 +263,7 @@ Artisanal install of the required modules is necessary:</p>
 </pre></div>
 
 <h2>
-<a name="error-handling-at-least-trying-to" class="anchor" href="#error-handling-at-least-trying-to"><span class="octicon octicon-link"></span></a>Error handling (at least trying to...)</h2>
+<a name="error-handling" class="anchor" href="#error-handling"><span class="octicon octicon-link"></span></a>Error handling</h2>
 
 <h3>
 <a name="querying-for-invalid-asns" class="anchor" href="#querying-for-invalid-asns"><span class="octicon octicon-link"></span></a>Querying for invalid ASNs</h3>
@@ -240,7 +282,7 @@ Artisanal install of the required modules is necessary:</p>
 </pre></div>
 
 <h3>
-<a name="malformed-whoiscymrucom-response" class="anchor" href="#malformed-whoiscymrucom-response"><span class="octicon octicon-link"></span></a>Malformed whois.cymru.com response</h3>
+<a name="malformed-whoiscymrucom" class="anchor" href="#malformed-whoiscymrucom"><span class="octicon octicon-link"></span></a>Malformed whois.cymru.com</h3>
 
 <p>A runTimeError exception is also in place to detect malformed whois responses:</p>
 
@@ -257,7 +299,7 @@ Artisanal install of the required modules is necessary:</p>
 indication on whether they are <em>CREATE</em>, <em>CONNECT</em>, <em>ADDRESS</em>, <em>SEND</em> and <em>RECEIVE</em> errors. The HTTP API catches them and sends an HTTP_41x error with an error message identifying the socket action causing triggering the exception.</p>
 
 <h2>
-<a name="to-do" class="anchor" href="#to-do"><span class="octicon octicon-link"></span></a>To-do</h2>
+<a name="to-do" class="anchor" href="#to-do"><span class="octicon octicon-link"></span></a>To Do</h2>
 
 <ul>
 <li>memoize w/ decorators to avoid having to hit whois.cymru.com unnecessarily</li>
@@ -265,7 +307,7 @@ indication on whether they are <em>CREATE</em>, <em>CONNECT</em>, <em>ADDRESS</e
 <li>logging</li>
 <li>installer</li>
 </ul><h2>
-<a name="disclaimer" class="anchor" href="#disclaimer"><span class="octicon octicon-link"></span></a>Disclaimer</h2>
+<a name="disclaimer" class="anchor" href="#disclaimer"><span class="octicon octicon-link"></span></a>Disclaimer:</h2>
 
 <p>this code is for a proto - Flask is not Async, which means it can only serve one concurrent user at a time
 ideally, it should:</p>
@@ -274,23 +316,21 @@ ideally, it should:</p>
 <li>not use WerkZeug but Tornado or some WGSI capable</li>
 <li>current config runs on localhost:8080, change that in the main loop if you want</li>
 </ul><h2>
-<a name="credits" class="anchor" href="#credits"><span class="octicon octicon-link"></span></a>Credits</h2>
+<a name="credits" class="anchor" href="#credits"><span class="octicon octicon-link"></span></a>Credits:</h2>
 
 <ul>
 <li> uses Team Cymru's awesome WHOIS, look at <a href="http://www.team-cymru.org/Services/ip-to-asn.html">http://www.team-cymru.org/Services/ip-to-asn.html</a> for more details</li>
 </ul><h2>
-<a name="be-kind-let-the-awesome-team-at-cymru-know-and-also-thank-them" class="anchor" href="#be-kind-let-the-awesome-team-at-cymru-know-and-also-thank-them"><span class="octicon octicon-link"></span></a>Be kind, let the awesome team at Cymru know, and also thank them!</h2>
+<a name="warning" class="anchor" href="#warning"><span class="octicon octicon-link"></span></a>Warning:</h2>
 
 <p>please let CYMRU know if this is going to be used in prod and/or intend to massively query their whois.
-In that case, it might be worth for you to take a look at their DNS based (<code>dig +short as&lt;aut-num&gt;.asn.cymru.com TXT</code>) service, and even ask them for the RBLs.
-In which case it is strongly advised to implement some flavor of caching.</p>
+In which case it is strongly advised to implement some flavor of caching</p>
       </section>
       <footer>
-        <p>This project is maintained by <a href="https://github.com/grrrrreg">grrrrreg</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+        <p><small>Hosted on <a href="http://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
       </footer>
     </div>
-    <script src="javascripts/scale.fix.js"></script>
-    
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
   </body>
 </html>
