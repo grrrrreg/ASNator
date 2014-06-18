@@ -217,7 +217,8 @@ def getAsDetails(asList, specificAction=False):
 		print("ERROR: SOCKET ERROR -> NETCAT ERROR -> GET_AS_DETAILS() ERROR")
 		# forward the last exception
 		raise
-	
+
+@asnToolApp.route('/asn/', defaults={'asFlatList': ''})	
 @asnToolApp.route('/asn/<path:asFlatList>/')
 def queryAsn(asFlatList):
 	""" 
@@ -234,8 +235,12 @@ def queryAsn(asFlatList):
 
 	#checks for an ASNList handed by queryArg instead of path, which is
 	#much more RESTful - only it now might collide if I'm doing both...
-
-
+	if request.args.get('query'):
+		if asFlatList:
+			asFlatList += ',' + request.args.get('query')
+		else:
+			asFlatList = request.args.get('query')
+	
 	# taking ASN list from the route <path:asnFlatList> (coma separated)
 	# and building the begin/end wrapped input to Cymru's whois
 	# if a record can be transtyped into an integer, do it, else keep it string'ed

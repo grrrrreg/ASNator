@@ -21,6 +21,29 @@ ASNator can either be used:
 ## json output mode
 By default, the output *content-type* is a valid *application/json*, the command below gives an input, showing a request that has been issued with both valid and invalid aut-nums  
 
+### RESTFUL mode using /asn/?query=<as1>,<as2> ....
+```curl http://127.0.0.1:8080/asn/?query=41690,29169 | jq .```
+
+Returns:
+```json
+{
+  "error": [],
+  "success": [
+    {
+      "AS_Description": "Dailymotion S.A.",
+      "AS_Country_Code": "FR",
+      "AS_Autnum": 41690
+    },
+    {
+      "AS_Description": "Gandi SAS",
+      "AS_Country_Code": "FR",
+      "AS_Autnum": 29169
+    }
+  ]
+}
+```
+
+### loosely RESTful using /asn/<as1>,<as2>...
 ```curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/ | jq .```
 *(using the awesome <a href='http://stedolan.github.io/jq/'>jq</a> to prettyprint the output of curl, has no relevance with ASNTool itself, but is a crazy good tool for REST devs)*.
 
