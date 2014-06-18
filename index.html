@@ -1,0 +1,296 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>ASNator by grrrrreg</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>ASNator</h1>
+        <p>Small Python+Flask API using team-cymru.com&#39;s bgp based whois server to return AS name and AS Country Code for a given ASN</p>
+
+        <p class="view"><a href="https://github.com/grrrrreg/ASNator">View the Project on GitHub <small>grrrrreg/ASNator</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/grrrrreg/ASNator/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/grrrrreg/ASNator/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/grrrrreg/ASNator">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a name="asnator" class="anchor" href="#asnator"><span class="octicon octicon-link"></span></a>ASNator</h1>
+
+<p>Small Python+Flask API using team-cymru.com's bgp based whois server to return AS name and AS Country Code for a given ASN
+Please read the disclaimer below as it it a prototype that has a lot of design and usage caveats because of both relying on Flask and on a whois server which might not be sized for a massively called API</p>
+
+<h2>
+<a name="requirements" class="anchor" href="#requirements"><span class="octicon octicon-link"></span></a>Requirements</h2>
+
+<p>Python module requirements are listed in a pip freeze output under requirements.txt attached to this repo
+Artisanal install of the required modules is necessary:</p>
+
+<pre><code>pip install -r requirements.txt
+</code></pre>
+
+<blockquote>
+<p>At some point when my life is already complete, I'll try and package it...</p>
+</blockquote>
+
+<h2>
+<a name="how-to-use-it" class="anchor" href="#how-to-use-it"><span class="octicon octicon-link"></span></a>How to use it</h2>
+
+<p>ASNator can either be used:</p>
+
+<ul>
+<li>
+<strong>API:</strong> as a standalone web API</li>
+<li>
+<strong>Python Module:</strong> as a module giving you access to useful functions: (via <code>import asntool</code>)
+
+<ul>
+<li><code>netcat(host,port,read_size)</code></li>
+<li>
+<code>getAsnDetails(asnList=list())</code> : uses netcat above to query Cymru for ASN details</li>
+<li>
+<code>isValidAutNum(aut_Num)</code>: tells you if an (int) ASN is valid or not according to 16 adn 32 bit ASNs allocations - handy for filter() functional programming </li>
+</ul>
+</li>
+</ul><p>Details about the functions from the module available via the docstrings:</p>
+
+<pre><code>&gt;&gt;&gt; import asntool
+&gt;&gt;&gt; help(netcat)
+&gt;&gt;&gt; help(getAsnDetails)
+&gt;&gt;&gt; help(isValidAutNum)
+</code></pre>
+
+<h2>
+<a name="api-mode-usage-example" class="anchor" href="#api-mode-usage-example"><span class="octicon octicon-link"></span></a>API mode usage example:</h2>
+
+<h3>
+<a name="json-output-mode" class="anchor" href="#json-output-mode"><span class="octicon octicon-link"></span></a>json output mode</h3>
+
+<p>By default, the output <em>content-type</em> is a valid <em>application/json</em>, the command below gives an input, showing a request that has been issued with both valid and invalid aut-nums  </p>
+
+<p><code>curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/ | jq .</code>
+<em>(using the awesome <a href="http://stedolan.github.io/jq/">jq</a> to prettyprint the output of curl, has no relevance with ASNTool itself, but is a crazy good tool for REST devs)</em>.</p>
+
+<p>Returns:</p>
+
+<div class="highlight highlight-json"><pre><span class="p">{</span>
+  <span class="nt">"error"</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">"AS_Description"</span><span class="p">:</span> <span class="s2">"invalid aut-num"</span><span class="p">,</span>
+      <span class="nt">"AS_Country_Code"</span><span class="p">:</span> <span class="s2">"n/a"</span><span class="p">,</span>
+      <span class="nt">"ASN_Autnum"</span><span class="p">:</span> <span class="s2">"65637"</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">"AS_Description"</span><span class="p">:</span> <span class="s2">"invalid aut-num"</span><span class="p">,</span>
+      <span class="nt">"AS_Country_Code"</span><span class="p">:</span> <span class="s2">"n/a"</span><span class="p">,</span>
+      <span class="nt">"ASN_Autnum"</span><span class="p">:</span> <span class="s2">"5000000000"</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="nt">"success"</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">"AS_Description"</span><span class="p">:</span> <span class="s2">"LYNET Kommunikation AG"</span><span class="p">,</span>
+      <span class="nt">"AS_Country_Code"</span><span class="p">:</span> <span class="s2">"DE"</span><span class="p">,</span>
+      <span class="nt">"AS_Autnum"</span><span class="p">:</span> <span class="mi">12822</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">"AS_Description"</span><span class="p">:</span> <span class="s2">"Orange S.A."</span><span class="p">,</span>
+      <span class="nt">"AS_Country_Code"</span><span class="p">:</span> <span class="s2">"FR"</span><span class="p">,</span>
+      <span class="nt">"AS_Autnum"</span><span class="p">:</span> <span class="mi">5511</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+<h3>
+<a name="csv-format" class="anchor" href="#csv-format"><span class="octicon octicon-link"></span></a>.csv format</h3>
+
+<p>csv format (Excel readable) is provided through the ?format=csv queryArg, as displayed in the example below.</p>
+
+<pre><code>curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/?format=csv
+</code></pre>
+
+<p>Will give you the following CSV file:</p>
+
+<table>
+<thead><tr>
+<th>is_AS_Valid</th>
+<th>AS_Description</th>
+<th>AS_Autnum</th>
+<th>AS_Country</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>SUCCESS</td>
+<td>12822</td>
+<td>DE</td>
+<td>LYNET Kommunikation AG</td>
+</tr>
+<tr>
+<td>SUCCESS</td>
+<td>5511</td>
+<td>FR</td>
+<td>Orange S.A.</td>
+</tr>
+<tr>
+<td>ERROR</td>
+<td>65637</td>
+<td>n/a</td>
+<td>invalid aut-num</td>
+</tr>
+<tr>
+<td>ERROR</td>
+<td>5000000000</td>
+<td>n/a</td>
+<td>invalid aut-num</td>
+</tr>
+</tbody>
+</table><h2>
+<a name="using-as-a-module" class="anchor" href="#using-as-a-module"><span class="octicon octicon-link"></span></a>Using as a module</h2>
+
+<p>All functions are available when importing asntool as a module, examples below.</p>
+
+<div class="highlight highlight-python"><pre><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="nn">asntool</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">asList</span> <span class="o">=</span> <span class="n">asntool</span><span class="o">.</span><span class="n">getAsDetails</span><span class="p">([</span><span class="mi">65637</span><span class="p">,</span><span class="mi">5000000000</span><span class="p">,</span><span class="mi">12822</span><span class="p">,</span><span class="mi">5511</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="nn">json</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="k">print</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">asList</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="s">"error"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s">"ASN_Autnum"</span><span class="p">:</span> <span class="s">"65637"</span><span class="p">,</span> 
+            <span class="s">"AS_Country_Code"</span><span class="p">:</span> <span class="s">"n/a"</span><span class="p">,</span> 
+            <span class="s">"AS_Description"</span><span class="p">:</span> <span class="s">"invalid aut-num"</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">"ASN_Autnum"</span><span class="p">:</span> <span class="s">"5000000000"</span><span class="p">,</span> 
+            <span class="s">"AS_Country_Code"</span><span class="p">:</span> <span class="s">"n/a"</span><span class="p">,</span> 
+            <span class="s">"AS_Description"</span><span class="p">:</span> <span class="s">"invalid aut-num"</span>
+        <span class="p">}</span>
+    <span class="p">],</span> 
+    <span class="s">"success"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s">"AS_Autnum"</span><span class="p">:</span> <span class="mi">12822</span><span class="p">,</span> 
+            <span class="s">"AS_Country_Code"</span><span class="p">:</span> <span class="s">"DE"</span><span class="p">,</span> 
+            <span class="s">"AS_Description"</span><span class="p">:</span> <span class="s">"LYNET Kommunikation AG"</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">"AS_Autnum"</span><span class="p">:</span> <span class="mi">5511</span><span class="p">,</span> 
+            <span class="s">"AS_Country_Code"</span><span class="p">:</span> <span class="s">"FR"</span><span class="p">,</span> 
+            <span class="s">"AS_Description"</span><span class="p">:</span> <span class="s">"Orange S.A."</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+<p>Or if you want to check if an aut-num is valid:</p>
+
+<div class="highlight highlight-python"><pre><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="nn">asntool</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">asntool</span><span class="o">.</span><span class="n">isValidAutNum</span><span class="p">(</span><span class="mi">65636</span><span class="p">):</span>
+<span class="o">...</span>     <span class="k">print</span> <span class="s">"AS65636 IS INVALID - side note: it is a private AS"</span>
+<span class="o">...</span> 
+<span class="n">AS65636</span> <span class="n">IS</span> <span class="n">INVALID</span> <span class="o">-</span> <span class="n">side</span> <span class="n">note</span><span class="p">:</span> <span class="n">it</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">private</span> <span class="n">AS</span>
+</pre></div>
+
+<p>You can also use the <code>?action=check</code> queryArg if you want to figure out which ASNs within a list are valid:</p>
+
+<pre><code>curl http://127.0.0.1:8080/asn/65637,5000000000,12322,3215,tata/?action=validate
+</code></pre>
+
+<p>Will give you that answer:</p>
+
+<div class="highlight highlight-json"><pre><span class="p">{</span>
+<span class="nt">"3215"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+<span class="nt">"12322"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+<span class="nt">"65637"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+<span class="nt">"tata"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+<span class="nt">"5000000000"</span><span class="p">:</span> <span class="kc">false</span>
+<span class="p">}</span>
+</pre></div>
+
+<h2>
+<a name="error-handling-at-least-trying-to" class="anchor" href="#error-handling-at-least-trying-to"><span class="octicon octicon-link"></span></a>Error handling (at least trying to...)</h2>
+
+<h3>
+<a name="querying-for-invalid-asns" class="anchor" href="#querying-for-invalid-asns"><span class="octicon octicon-link"></span></a>Querying for invalid ASNs</h3>
+
+<p>The HTTP Rest API will generate an HTTP Error and return a body detailing the error in case all queried ASNs are invalid.</p>
+
+<pre><code>curl http://127.0.0.1:8080/asn/131071,65539/
+</code></pre>
+
+<p>Will return an HTTP_421 error:</p>
+
+<div class="highlight highlight-json"><pre><span class="p">{</span>
+<span class="nt">"error_code"</span><span class="p">:</span> <span class="s2">"421"</span><span class="p">,</span>
+<span class="nt">"error_descr"</span><span class="p">:</span> <span class="s2">"GET_AS_DETAILS().INVALID_ASN_LIST_ERROR: 131071, 65539"</span>
+<span class="p">}</span>
+</pre></div>
+
+<h3>
+<a name="malformed-whoiscymrucom-response" class="anchor" href="#malformed-whoiscymrucom-response"><span class="octicon octicon-link"></span></a>Malformed whois.cymru.com response</h3>
+
+<p>A runTimeError exception is also in place to detect malformed whois responses:</p>
+
+<div class="highlight highlight-python"><pre>    <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">errorResponse</span> <span class="o">=</span>  <span class="n">make_response</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s">'error_code'</span><span class="p">:</span><span class="s">'420'</span><span class="p">,</span> <span class="s">'error_descr'</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}),</span> <span class="mi">420</span><span class="p">)</span>
+        <span class="n">errorResponse</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">'content-type'</span><span class="p">]</span> <span class="o">=</span> <span class="s">'application/json'</span>
+        <span class="k">return</span> <span class="n">errorResponse</span>
+</pre></div>
+
+<h3>
+<a name="socket-errors" class="anchor" href="#socket-errors"><span class="octicon octicon-link"></span></a>Socket errors</h3>
+
+<p>errors due to the <code>netcat()</code> function misbehaving are also taken into account and forwarded as <code>socket.error</code> and <code>socket.gaierror</code> with an 
+indication on whether they are <em>CREATE</em>, <em>CONNECT</em>, <em>ADDRESS</em>, <em>SEND</em> and <em>RECEIVE</em> errors. The HTTP API catches them and sends an HTTP_41x error with an error message identifying the socket action causing triggering the exception.</p>
+
+<h2>
+<a name="to-do" class="anchor" href="#to-do"><span class="octicon octicon-link"></span></a>To-do</h2>
+
+<ul>
+<li>memoize w/ decorators to avoid having to hit whois.cymru.com unnecessarily</li>
+<li>memoize spliting an array-of-ASNs argument into multiple single ASNs so that all individual ASNs get cached</li>
+<li>logging</li>
+<li>installer</li>
+</ul><h2>
+<a name="disclaimer" class="anchor" href="#disclaimer"><span class="octicon octicon-link"></span></a>Disclaimer</h2>
+
+<p>this code is for a proto - Flask is not Async, which means it can only serve one concurrent user at a time
+ideally, it should:</p>
+
+<ul>
+<li>not use WerkZeug but Tornado or some WGSI capable</li>
+<li>current config runs on localhost:8080, change that in the main loop if you want</li>
+</ul><h2>
+<a name="credits" class="anchor" href="#credits"><span class="octicon octicon-link"></span></a>Credits</h2>
+
+<ul>
+<li> uses Team Cymru's awesome WHOIS, look at <a href="http://www.team-cymru.org/Services/ip-to-asn.html">http://www.team-cymru.org/Services/ip-to-asn.html</a> for more details</li>
+</ul><h2>
+<a name="be-kind-let-the-awesome-team-at-cymru-know-and-also-thank-them" class="anchor" href="#be-kind-let-the-awesome-team-at-cymru-know-and-also-thank-them"><span class="octicon octicon-link"></span></a>Be kind, let the awesome team at Cymru know, and also thank them!</h2>
+
+<p>please let CYMRU know if this is going to be used in prod and/or intend to massively query their whois.
+In that case, it might be worth for you to take a look at their DNS based (<code>dig +short as&lt;aut-num&gt;.asn.cymru.com TXT</code>) service, and even ask them for the RBLs.
+In which case it is strongly advised to implement some flavor of caching.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/grrrrreg">grrrrreg</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
