@@ -195,10 +195,10 @@ def getAsDetails(asList, specificAction=False):
 					orgName = ''.join(tmp[0:len(tmp)-1]).split(' ',1)[1].replace('- ','')
 					
 				else:
-					#this code seems completely wrong - if not len(tmp)>1 then there aren't two elements in tmp...
-					#this needs to be fixed asap
-					countryCode = tmp[1]
-					orgName = tmp[0]
+					#some legit ASNs, like AS123456789 are legit but will return ['NO_NAME']
+					#just skip those ones, probably unallocated ones.
+					countryCode = "valid but unallocated ASN"
+					orgName = "valid but unallocated ASN"
 
 				formattedResult['success'].append({'AS_Autnum':validAsnList[i], 'AS_Description':orgName, 'AS_Country_Code':countryCode})
 				i += 1
@@ -232,6 +232,10 @@ def queryAsn(asFlatList):
 	else:
 		outFormat = None;
 
+	#checks for an ASNList handed by queryArg instead of path, which is
+	#much more RESTful - only it now might collide if I'm doing both...
+
+
 	# taking ASN list from the route <path:asnFlatList> (coma separated)
 	# and building the begin/end wrapped input to Cymru's whois
 	# if a record can be transtyped into an integer, do it, else keep it string'ed
@@ -260,7 +264,6 @@ def queryAsn(asFlatList):
 			return Response(csvResult, mimetype='text/csv')
 
 		else:
-			print result
 			return Response(json.dumps(result), content_type = 'application/json', headers = {'Access-Control-Allow-Origin':'http://127.0.0.1:8000'})
 
 	except socket.error, e:
