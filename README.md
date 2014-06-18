@@ -4,12 +4,15 @@ ASNator
 Small Python+Flask API using team-cymru.com's bgp based whois server to return AS name and AS Country Code for a given ASN
 Please read the disclaimer below as it it a prototype that has a lot of design and usage caveats because of both relying on Flask and on a whois server which might not be sized for a massively called API
 
-# REQUIREMENTS
+## Requirements
 Python module requirements are listed in a pip freeze output under requirements.txt attached to this repo
 To isntall the dependencies:
-```pip install -r requirements.txt```
+```
+pip install -r requirements.txt
+```
+> at some point in a distant future I will try and package it...
 
-# USE
+## Using ASNator
 ASNator can either be used:
 - as a standalone web API
 - as a module giving you access to useful functions: (via ```import asntool```)
@@ -17,11 +20,11 @@ ASNator can either be used:
 	- ```getAsnDetails(asnList=list())``` : uses netcat above to query Cymru for ASN details
 	- ```isValidAutNum(aut_Num)```: tells you if an (int) ASN is valid or not according to 16 adn 32 bit ASNs allocations - handy for filter() functional programming 
 
-# API mode usage example:
-## json output mode
+## API mode usage example:
+### json output mode
 By default, the output *content-type* is a valid *application/json*, the command below gives an input, showing a request that has been issued with both valid and invalid aut-nums  
 
-### RESTFUL mode using /asn/?query=<as1>,<as2> ....
+#### RESTful mode using /asn/?query=<as1>,<as2> ....
 ```curl http://127.0.0.1:8080/asn/?query=41690,29169 | jq .```
 
 Returns:
@@ -43,7 +46,7 @@ Returns:
 }
 ```
 
-### loosely RESTful using /asn/<as1>,<as2>...
+#### loosely RESTful (aka, not RESTful, for realz) using /asn/<as1>,<as2>...
 ```curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/ | jq .```
 *(using the awesome <a href='http://stedolan.github.io/jq/'>jq</a> to prettyprint the output of curl, has no relevance with ASNTool itself, but is a crazy good tool for REST devs)*.
 
@@ -76,7 +79,24 @@ Returns:
   ]
 }
 ```
-## .csv format
+#### validate AS Numbers
+The ```?action=validate``` will allow you to validate if an ASN is valid or not, and if it has been allocted or not.
+```
+curl http://127.0.0.1:8080/asn/65637,5000000000,12322,3215,tata/?action=validate
+```
+Will give you that answer:
+```json
+{
+    "3215": true,
+    "12322": true,
+    "65637": false,
+    "tata": false,
+    "5000000000": false
+}
+```
+> **note: ** AS like AS1234567 are valid from a RIR standpoint (RIPE, ARIN...), but are not allocated, these will be marked as valid (i.e. value for a "success" key in a reponse json, and will be validated by the ```?action=validate``` option
+
+#### .csv format
 csv format (Excel readable) is provided through the ?format=csv queryArg, as displayed in the example below.
 ```
 curl http://127.0.0.1:8080/asn/65637,5000000000,12822,5511/?format=csv
@@ -90,7 +110,7 @@ Will give you the following CSV file:
 |ERROR	        |65637	        |n/a	        |invalid aut-num       |
 |ERROR	        |5000000000	|n/a	        |invalid aut-num       |
 
-# Using as a module
+## Using as a module
 All functions are available when importing asntool as a module, examples below.
 
 ```python 
@@ -149,8 +169,8 @@ Will give you that answer:
 }
 ```
 
-# Error handling
-## Querying for invalid ASNs
+## Error handling
+### Querying for invalid ASNs
 The HTTP Rest API will generate an HTTP Error and return a body detailing the error in case all queried ASNs are invalid.
 ```
 curl http://127.0.0.1:8080/asn/131071,65539/
@@ -162,7 +182,7 @@ Will return an HTTP_421 error:
 "error_descr": "GET_AS_DETAILS().INVALID_ASN_LIST_ERROR: 131071, 65539"
 }
 ``` 
-## Malformed whois.cymru.com
+### Malformed whois.cymru.com
 A runTimeError exception is also in place to detect malformed whois responses:
 ```python
 	except RuntimeError, e:
@@ -171,26 +191,25 @@ A runTimeError exception is also in place to detect malformed whois responses:
 		return errorResponse
 ```
 
-## Socket errors
+### Socket errors
 errors due to the ```netcat()``` function misbehaving are also taken into account and forwarded as ```socket.error``` and ```socket.gaierror``` with an 
 indication on whether they are *CREATE*, *CONNECT*, *ADDRESS*, *SEND* and *RECEIVE* errors. The HTTP API catches them and sends an HTTP_41x error with an error message identifying the socket action causing triggering the exception.
 
-# TO-DO
+## To Do
 - memoize w/ decorators to avoid having to hit whois.cymru.com unnecessarily
 - memoize spliting an array-of-ASNs argument into multiple single ASNs so that all individual ASNs get cached
 - logging
 - installer
-- fix the ASN provided as string
 
-# DISCLAIMER: 
+## Disclaimer: 
 this code is for a proto - Flask is not Async, which means it can only serve one concurrent user at a time
 ideally, it should:
 - not use WerkZeug but Tornado or some WGSI capable
 - current config runs on localhost:8080, change that in the main loop if you want
 
-# CREDITS:
+## Credits:
 -  uses Team Cymru's awesome WHOIS, look at http://www.team-cymru.org/Services/ip-to-asn.html for more details
 
-# WARNING: 
+## Warning: 
 please let CYMRU know if this is going to be used in prod and/or intend to massively query their whois.
 In which case it is strongly advised to implement some flavor of caching
