@@ -14,7 +14,7 @@ from flask import Flask, request, Response, make_response
 # please make sure that you implement some level of caching in case you are going to massively query whois.cymru.com
 ################
 
-asnToolApp = Flask(__name__)
+asn_tool_app = Flask(__name__)
 
 # GLOBALS
 CYMRU_HOST = 'whois.cymru.com'
@@ -218,20 +218,19 @@ def getAsDetails(asList, specificAction=False):
 		# forward the last exception
 		raise
 
-@asnToolApp.route('/asn/', defaults={'asFlatList': ''})	
-@asnToolApp.route('/asn/<path:asFlatList>/')
+@asn_tool_app.route('/asn/<path:asFlatList>/', defaults={'asFlatList': ''}, methods=['GET'])
 def queryAsn(asFlatList):
-	""" 
-	Flask wrapped function to figure out name and country details of an asNumber
-	asFlatList:	comma separated list of values for each ASN to be queries against
-	USES TEAM CYMRU's WHOIS SERVER: http://www.team-cymru.org/Services/ip-to-asn.html
-	"""
+	"""Flask Route, returning [{AS_Autnum:'',AS_Country_Code:'',AS_Description:''}] for all ASes provided in /asn/<asFlatList> or in ?query parameter
+	params:
+		query[<as1, as2, as3>]: coma separated list of ASNs - sets the list of ASNs to query
+		format[csv]: returns a downloadable CSV file
+		action[validate]: just validates wheter ASNs are valid without querying whois"""
 
 	#checks if ?format=csv is used as a query arg
 	if request.args.get('format'):
-		outFormat = request.args.get('format')
+		output_format = request.args.get('format')
 	else:
-		outFormat = None;
+		output_format = None;
 
 	#checks for an ASNList handed by queryArg instead of path, which is
 	#much more RESTful - only it now might collide if I'm doing both...
@@ -261,7 +260,7 @@ def queryAsn(asFlatList):
 	try:
 		result = getAsDetails(asList)
 		
-		if outFormat:
+		if output_format:
 			csvResult = '"is_AS_Valid","AS_Description","AS_Autnum","AS_Country"\n'
 			for key in result:
 				for asObject in result[key]:
@@ -272,30 +271,61 @@ def queryAsn(asFlatList):
 			return Response(json.dumps(result), content_type = 'application/json', headers = {'Access-Control-Allow-Origin':'http://127.0.0.1:8000'})
 
 	except socket.error, e:
-		errorResponse =  make_response(json.dumps({'error_code':'510', 'error_descr':str(e)}), 510)
-		errorResponse.headers['content-type'] = 'application/json'
-		return errorResponse
+		error_response =  make_response(json.dumps({'error_code':'510', 'error_descr':str(e)}), 510)
+		error_response.headers['content-type'] = 'application/json'
+		return error_response
 
 	except socket.gaierror, e:
-		errorResponse =  make_response(json.dumps({'error_code':'511', 'error_descr':str(e)}), 511)
-		errorResponse.headers['content-type'] = 'application/json'
-		return errorResponse
+		error_response =  make_response(json.dumps({'error_code':'511', 'error_descr':str(e)}), 511)
+		error_response.headers['content-type'] = 'application/json'
+		return error_response
 
 	except RuntimeError, e:
-		errorResponse =  make_response(json.dumps({'error_code':'512', 'error_descr':str(e)}), 512)
-		errorResponse.headers['content-type'] = 'application/json'
-		return errorResponse
+		error_response =  make_response(json.dumps({'error_code':'512', 'error_descr':str(e)}), 512)
+		error_response.headers['content-type'] = 'application/json'
+		return error_response
 
 	except ValueError, e:
-		errorResponse =  make_response(json.dumps({'error_code':'410', 'error_descr':str(e)}), 410)
-		errorResponse.headers['content-type'] = 'application/json'
-		return errorResponse
+		error_response =  make_response(json.dumps({'error_code':'410', 'error_descr':str(e)}), 410)
+		error_response.headers['content-type'] = 'application/json'
+		return error_response
+
+@asn_tool_app.route('/asn/')
+def show_api_doc():
+	'''Auto documentation endpoint, sits at the root path of this API'''
+	api_endpoints = []
+	func_count = 0
+	for rule in asn_tool_app.url_map.iter_rules():
+		if rule.endpoint not in [api_endpoints[x]['func'] for x in (range(len(api_endpoints)))] and rule.endpoint != 'static':
+			curr_func = {}
+			curr_func['func'] = rule.endpoint
+			curr_func['descr'] = (asn_tool_app.view_functions[rule.endpoint].__doc__).split("\n\tparams:\n\t\t")[0]
+			curr_params = (asn_tool_app.view_functions[rule.endpoint].__doc__).split("\n\tparams:\n\t\t")
+			if len(curr_params) > 1:
+				curr_func['optionnal_params'] =[]
+				for param in curr_params[1].split("\n\t\t"):
+					curr_func['optionnal_params'].append({
+						'name_values':'?' + param.split(': ')[0].replace('[','=[').replace("]=","="),
+						'descr': param.split(': ')[1]
+					})
+			else:
+				curr_params = ''
+			curr_func['routes'] = []
+			api_endpoints.append(curr_func)
+			for rule_rescan in asn_tool_app.url_map.iter_rules():
+				if rule_rescan.endpoint != 'static' and rule_rescan.endpoint == rule.endpoint:
+					api_endpoints[func_count]['routes'].append({
+						'route':rule_rescan.rule,
+						'allowed_methods':', '.join(list(rule_rescan.methods))
+					})
+			func_count += 1		
+	return Response(json.dumps(api_endpoints), content_type = 'application/json', headers = {'Access-Control-Allow-Origin':'http://127.0.0.1'})
 
 ############
 # MAIN LOOP
 ############
 def main():
-	asnToolApp.run(host='0.0.0.0', port=8080, debug=True, threaded=True)
+	asn_tool_app.run(host='0.0.0.0', port=8080, debug=True, threaded=True)
 
 if __name__ == '__main__':
 	main()
