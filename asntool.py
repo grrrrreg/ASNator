@@ -338,7 +338,7 @@ def get_asn_from_ip(ip_list):
 		for line in cymru_response:
 			tmp = line.split('|')
 			tmp = [' '.join(elt.split(' ')).strip() for elt in tmp]
-			print tmp
+			#print tmp
 			asn = int(tmp[0])
 			cidr_network = tmp[2].split('/')[0]
 			cidr_length = tmp[2].split('/')[1]

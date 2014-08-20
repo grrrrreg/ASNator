@@ -111,6 +111,7 @@ Will give you the following CSV file:
 |ERROR	        |5000000000	|n/a	        |invalid aut-num       |
 
 ## Using as a module
+### getting ASN to country and AS Descr mappings
 All functions are available when importing asntool as a module, examples below.
 
 ```python 
@@ -167,6 +168,29 @@ Will give you that answer:
 "tata": false,
 "5000000000": false
 }
+```
+
+### getting IP to ASN, Country, Descr mappings
+This feature is not yet available decorated as an API endpoint, but still commited in the master because the function def in the module is usable by importing.
+Here's an example of how it currently works, refer to the function docstring for details if you need. (also, please note that is uses python's IPy module to manipulate IP subnetting - motly for future use)
+```python
+>>> import asntool
+>>> response = asntool.get_asn_from_ip('32.43.54.50')
+>>> response
+{
+    'success': [
+        {
+          'CIDR_prefix':    '32.0.0.0/8', 
+          'AS_asn':         2686, 
+          'CIDR_hosts':     16777216, 
+          'AS_description': 'AT&T Global Network Services LLC', 
+          'AS_country_code':'US', 
+          'CIDR_literal':   '32.0.0.0-32.255.255.255'
+        }
+      ], 
+    'error': []
+}
+>>> 
 ```
 
 ## Error handling
